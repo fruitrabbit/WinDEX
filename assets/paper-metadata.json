@@ -1,0 +1,26 @@
+{
+  "title": "WinDEX: Metric 3D Hand Motion Reconstruction in the Wild for Dexterous Teleoperation and Policy Learning",
+  "abstract": "Human manipulation data are widely used to train robots for human-like dexterity. However, low-cost, large-scale collection in the wild remains challenging. Existing methods remain limited in geometrically grounded metric-scale reconstruction, real-world generalization and inference speed. We present WinDEX, integrating (1) geometric–temporal optimization for metric 3D hand annotation from in-the-wild egocentric stereo videos, combined with visual–inertial SLAM for world-frame reconstruction; (2) WinDEX-Net, an end-to-end, fisheye-native network combining calibrated stereo, local detail and temporal context, with a data–model flywheel of model-assisted annotation and retraining; (3) distilled models for offline reconstruction and causal streaming, supporting reinforcement learning and teleoperation; and (4) low-cost CyberCap stereo–inertial capture, forming the WinDEX-Hand dataset with 1,000 hours of training annotations and held-out human-annotated in-the-wild 2D and independent optical motion-capture evaluation sets. Offline reconstruction runs at 43.61 FPS and causal streaming at 171 FPS. On held-out data, offline reconstruction achieves state-of-the-art accuracy: 14.5 pixels in-the-wild reprojection error and, with visual–inertial odometry, 37.29 mm world-frame joint error. We achieve 7.6× and 3.6× the task success rates of reinforcement learning policies trained with WiLoR and HaWoR motion references, respectively, and demonstrate real-time arm–hand teleoperation.",
+  "preprintTemplate": "IEEEtran",
+  "pages": 18,
+  "correspondingAuthorLabel": false,
+  "layout": "two-column",
+  "authorRows": [
+    [
+      "Hongyu Ma",
+      "Hairong Qu",
+      "Shiqi Zhao",
+      "Yongsong Yang"
+    ],
+    [
+      "Kai Shi",
+      "Jiahao Ai",
+      "Xin You",
+      "Peng Yin"
+    ]
+  ],
+  "paperVersion": "ieee-20261115-author-v4",
+  "bodyPages": 16,
+  "referencesPages": 2,
+  "mobileCompatibilityRepair": true
+}
