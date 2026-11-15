@@ -13,6 +13,14 @@ const heroFilm = $('#hero-film');
 const previewVideos = new Set();
 const previewLimit = matchMedia('(max-width: 600px)').matches ? 4 : 8;
 
+function releasePreview(video) {
+  video.pause();
+  if (video.hasAttribute('src')) {
+    video.removeAttribute('src');
+    video.load();
+  }
+}
+
 function syncPreviews() {
   let active = 0;
   for (const video of previewVideos) {
@@ -21,7 +29,7 @@ function syncPreviews() {
       active++;
       if (!video.getAttribute('src')) video.src = video.dataset.src;
       video.play().catch(() => {});
-    } else video.pause();
+    } else releasePreview(video);
   }
 }
 const previewObserver = new IntersectionObserver(entries => {
@@ -54,7 +62,7 @@ function makeVideo(item, preview = false) {
 function openViewer(item) {
   heroFilm.pause();
   $('#process-video').pause();
-  previewVideos.forEach(v => v.pause());
+  previewVideos.forEach(releasePreview);
   const area = $('#dialog-content');
   const previousVideo = $('video', area);
   if (previousVideo) { previousVideo.pause(); previousVideo.removeAttribute('src'); previousVideo.load(); }
