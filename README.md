@@ -6,6 +6,8 @@ Live website: https://fruitrabbit.github.io/WinDEX/
 
 Static HTML, CSS, and JavaScript with self-hosted video and image assets. No build step or external CDN is required. The paper buttons are intentionally inactive until a publication URL is available.
 
+The dark visual theme follows CyberOrigin's near-black surfaces, green accents, and Space Grotesk / JetBrains Mono typography. Fonts are self-hosted with their licenses in `assets/fonts/`.
+
 ## Local preview
 
 Run `python3 -m http.server 8000 --bind 127.0.0.1` from this folder, then visit http://127.0.0.1:8000/.
