@@ -8,6 +8,8 @@ Static HTML, CSS, and JavaScript with self-hosted video and image assets. No bui
 
 The dark visual theme follows CyberOrigin's near-black surfaces, green accents, and Space Grotesk / JetBrains Mono typography. Fonts are self-hosted with their licenses in `assets/fonts/`.
 
+Gallery cards load lightweight six-second previews only when visible (two at a time on desktop, one on mobile). Full clips load on demand in the viewer. The full-length research film uses a smaller streaming encode; the original remains available for download.
+
 ## Local preview
 
 Run `python3 -m http.server 8000 --bind 127.0.0.1` from this folder, then visit http://127.0.0.1:8000/.

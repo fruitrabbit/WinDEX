@@ -1,0 +1,17 @@
+/* Keep posters visible while the small, on-demand preview buffers. */
+.media-rail .media-open .media-poster,
+.media-rail .media-open .auto-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.media-rail .auto-preview { opacity: 0; transition: opacity .15s; }
+.media-rail .auto-preview.preview-ready { opacity: 1; }
+/* Solid overlays avoid dozens of per-frame backdrop filters over video. */
+.media-rail .activity-badge,
+.media-rail .card-index,
+.media-rail .card-play,
+.media-rail .media-badge { backdrop-filter: none; -webkit-backdrop-filter: none; }

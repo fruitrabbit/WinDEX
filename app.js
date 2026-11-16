@@ -1,7 +1,9 @@
 const $ = (q, root = document) => root.querySelector(q);
 const $$ = (q, root = document) => [...root.querySelectorAll(q)];
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let previewsPaused = reducedMotion;
+const connection = navigator.connection;
+const constrainedConnection = connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType || '');
+let previewsPaused = reducedMotion || constrainedConnection;
 let items = [];
 const activityNames = ['Food preparation','Retail','Logistics','Production','Cleaning','Healthcare','Repair','Personal care','Construction','Office work','Farming','Craft','Education'];
 const activityLabel = name => ({'Office work':'Office setting','Education':'School setting'}[name] || name);
@@ -11,47 +13,97 @@ function formatDuration(seconds) { const n=Math.round(seconds||0);return `${Math
 const dialog = $('#media-dialog');
 const heroFilm = $('#hero-film');
 const previewVideos = new Set();
-const previewLimit = matchMedia('(max-width: 600px)').matches ? 4 : 8;
+const previewLimit = matchMedia('(max-width: 600px)').matches ? 1 : 2;
+const releaseTimers = new WeakMap();
+const sourcePositions = new WeakMap();
+let previewTimer;
 
-function releasePreview(video) {
+function cancelRelease(video) {
+  clearTimeout(releaseTimers.get(video));
+  releaseTimers.delete(video);
+}
+
+function loadVideo(video) {
+  cancelRelease(video);
+  if (!video.getAttribute('src') && video.dataset.src) {
+    video.src = video.dataset.src;
+  }
+}
+
+function unloadVideo(video, remember = false) {
+  cancelRelease(video);
+  if (remember && video.hasAttribute('src')) sourcePositions.set(video, video.currentTime || 0);
   video.pause();
+  video.classList.remove('preview-ready');
   if (video.hasAttribute('src')) {
     video.removeAttribute('src');
     video.load();
   }
 }
 
+function releaseLater(video, remember = false) {
+  video.pause();
+  if (!video.hasAttribute('src') || releaseTimers.has(video)) return;
+  releaseTimers.set(video, setTimeout(() => unloadVideo(video, remember), 1000));
+}
+
+function restorePosition(video) {
+  const position = sourcePositions.get(video);
+  if (position > 0 && Number.isFinite(video.duration)) video.currentTime = Math.min(position, video.duration);
+  sourcePositions.delete(video);
+}
+
+function releasePreview(video) {
+  unloadVideo(video);
+}
+
 function syncPreviews() {
-  let active = 0;
+  clearTimeout(previewTimer);
+  const blocked = previewsPaused || dialog.open || document.hidden || !heroFilm.paused || !$('#process-video').paused;
+  const candidates = blocked ? [] : [...previewVideos]
+    .filter(video => video.isConnected && Number(video.dataset.visibility) >= .5)
+    .sort((a, b) => Number(b.dataset.priority || 0) - Number(a.dataset.priority || 0) || Number(b.dataset.visibility) - Number(a.dataset.visibility));
+  const active = new Set(candidates.slice(0, previewLimit));
   for (const video of previewVideos) {
-    const play = video.isConnected && video.dataset.visible === 'true' && !previewsPaused && !dialog.open && !document.hidden && active < previewLimit;
-    if (play) {
-      active++;
-      if (!video.getAttribute('src')) video.src = video.dataset.src;
-      video.play().catch(() => {});
-    } else releasePreview(video);
+    if (active.has(video)) cancelRelease(video);
+    else if (blocked) releasePreview(video);
+    else releaseLater(video);
   }
+  // Let scrolling settle before opening another decoder or starting a request.
+  if (active.size) previewTimer = setTimeout(() => {
+    for (const video of active) {
+      loadVideo(video);
+      if (video.paused) video.play().catch(() => {});
+    }
+  }, 180);
 }
 const previewObserver = new IntersectionObserver(entries => {
-  for (const { target, isIntersecting } of entries) target.dataset.visible = String(isIntersecting);
+  for (const { target, intersectionRatio } of entries) target.dataset.visibility = String(intersectionRatio);
   syncPreviews();
-}, { threshold: .25 });
+}, { threshold: [0, .5, .9] });
+const posterObserver = new IntersectionObserver(entries => {
+  for (const { target, isIntersecting } of entries) if (isIntersecting) {
+    target.src = target.dataset.src;
+    posterObserver.unobserve(target);
+  }
+}, { rootMargin: '160px', threshold: 0 });
 
 function makeVideo(item, preview = false) {
   const video = document.createElement('video');
-  video.poster = item.poster;
   video.preload = 'none';
   video.playsInline = true;
   video.setAttribute('playsinline', '');
   video.muted = true;
   video.loop = true;
   if (preview) {
-    video.dataset.src = item.file;
+    video.dataset.src = item.preview || item.file;
     video.className = 'auto-preview';
     video.setAttribute('aria-hidden', 'true');
+    video.addEventListener('playing', () => video.classList.add('preview-ready'));
     previewVideos.add(video);
     previewObserver.observe(video);
   } else {
+    video.poster = item.poster;
     video.src = item.file;
     video.controls = true;
     video.setAttribute('aria-label', item.title);
@@ -65,12 +117,12 @@ function openViewer(item) {
   previewVideos.forEach(releasePreview);
   const area = $('#dialog-content');
   const previousVideo = $('video', area);
-  if (previousVideo) { previousVideo.pause(); previousVideo.removeAttribute('src'); previousVideo.load(); }
+  if (previousVideo) unloadVideo(previousVideo);
   area.replaceChildren();
   const video = makeVideo(item);
   video.preload = 'auto';
-  video.muted = item.file !== 'assets/WinDEX-film-browser-v2.mp4';
-  video.loop = item.file !== 'assets/WinDEX-film-browser-v2.mp4';
+  video.muted = item.id !== 'research-film';
+  video.loop = item.id !== 'research-film';
   area.append(video);
   $('#dialog-title').textContent = item.title;
   $('#dialog-description').textContent = item.description || '';
@@ -85,6 +137,7 @@ function openViewer(item) {
     const img=document.createElement('img');img.src=entry.poster;img.alt='';img.loading='lazy';const caption=document.createElement('span');caption.textContent=entry.title;button.append(img,caption);button.addEventListener('click',()=>openViewer(entry));return button;
   }) : []));
   if (!dialog.open) dialog.showModal();
+  syncPreviews();
   const activeThumb=$('#dialog-playlist [aria-pressed="true"]');if(activeThumb) activeThumb.scrollIntoView({behavior:'instant',block:'nearest',inline:'center'});
   document.body.style.overflow = 'hidden';
   video.play().catch(() => {});
@@ -96,13 +149,20 @@ dialog.addEventListener('keydown',e=>{ if(e.target.tagName==='VIDEO')return; if(
 $('.dialog-close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
 dialog.addEventListener('close', () => {
-  $('#dialog-content video')?.pause();
+  const video = $('#dialog-content video');
+  if (video) unloadVideo(video);
   $('#dialog-content').replaceChildren();
   document.body.style.overflow = '';
+  if (!document.hidden) {
+    if (filmInView) loadVideo(heroFilm);
+    if (processInView) loadVideo($('#process-video'));
+  }
   syncPreviews();
 });
-$$('[data-film]').forEach(button => button.addEventListener('click', () => openViewer({ title: 'WinDEX · Research film', description: 'Capture, world-frame reconstruction, learned inference, and robot manipulation.', file: 'assets/WinDEX-film-browser-v2.mp4', poster: 'assets/film-poster.jpg' })));
+$$('[data-film]').forEach(button => button.addEventListener('click', () => openViewer({ id: 'research-film', title: 'WinDEX · Research film', description: 'Capture, world-frame reconstruction, learned inference, and robot manipulation.', file: heroFilm.dataset.src, poster: 'assets/film-poster.jpg' })));
 $('#film-sound').addEventListener('click', () => {
+  sourcePositions.delete(heroFilm);
+  loadVideo(heroFilm);
   heroFilm.currentTime = 0;
   heroFilm.muted = false;
   heroFilm.play().catch(() => {});
@@ -110,18 +170,27 @@ $('#film-sound').addEventListener('click', () => {
 heroFilm.addEventListener('error', () => { $('#film-error').hidden = false; });
 heroFilm.addEventListener('playing', () => { $('#film-error').hidden = true; });
 $('#film-retry').addEventListener('click', () => {
+  loadVideo(heroFilm);
   heroFilm.load();
   heroFilm.play().catch(() => { $('#film-error').hidden = false; });
 });
-if (reducedMotion) { heroFilm.autoplay = false; heroFilm.pause(); }
 let filmResumeOnReturn = false;
+let filmStarted = false;
+let filmInView = false;
+heroFilm.addEventListener('loadedmetadata', () => restorePosition(heroFilm));
+heroFilm.addEventListener('play', syncPreviews);
+heroFilm.addEventListener('pause', syncPreviews);
 const filmObserver = new IntersectionObserver(entries => {
-  if (!entries[0].isIntersecting && !document.fullscreenElement) {
+  filmInView = entries[0].isIntersecting;
+  if (!filmInView && !document.fullscreenElement) {
     filmResumeOnReturn = !heroFilm.paused;
-    heroFilm.pause();
-  } else if (filmResumeOnReturn && !dialog.open && !document.hidden) {
+    releaseLater(heroFilm, true);
+  } else if (filmInView && !dialog.open && !document.hidden) {
+    loadVideo(heroFilm);
+    const shouldPlay = filmResumeOnReturn || (!filmStarted && !reducedMotion && !constrainedConnection);
+    filmStarted = true;
     filmResumeOnReturn = false;
-    heroFilm.play().catch(() => {});
+    if (shouldPlay) heroFilm.play().catch(() => {});
   }
 }, { threshold: .05 });
 filmObserver.observe(heroFilm);
@@ -132,7 +201,20 @@ function mediaCard(item, index) {
   const button = document.createElement('button');
   button.className = 'media-open';
   button.setAttribute('aria-label', `Play ${item.title}`);
-  button.append(makeVideo(item, true));
+  const poster = document.createElement('img');
+  poster.className = 'media-poster';
+  poster.dataset.src = item.poster;
+  poster.alt = '';
+  poster.loading = 'lazy';
+  poster.decoding = 'async';
+  posterObserver.observe(poster);
+  const preview = makeVideo(item, true);
+  button.append(poster, preview);
+  const prioritize = value => { preview.dataset.priority = value; syncPreviews(); };
+  button.addEventListener('pointerenter', event => { if (event.pointerType === 'mouse') prioritize('1'); });
+  button.addEventListener('pointerleave', () => prioritize('0'));
+  button.addEventListener('focus', () => prioritize('1'));
+  button.addEventListener('blur', () => prioritize('0'));
   const number = document.createElement('span'); number.className = 'card-index'; number.textContent = String(index + 1).padStart(2, '0');
   const play = document.createElement('span'); play.className = 'card-play'; play.textContent = '▶'; play.setAttribute('aria-hidden', 'true');
   button.append(number, play);
@@ -204,7 +286,8 @@ $$('[data-rail]').forEach(button => button.addEventListener('click', () => scrol
 
 function fillRail(name, selected) {
   const { rail } = rails.get(name);
-  $$('video', rail).forEach(video => { previewObserver.unobserve(video); previewVideos.delete(video); video.pause(); video.removeAttribute('src'); video.load(); });
+  $$('video', rail).forEach(video => { previewObserver.unobserve(video); previewVideos.delete(video); releasePreview(video); });
+  $$('.media-poster', rail).forEach(img => posterObserver.unobserve(img));
   rail.classList.toggle('short-rail', selected.length < 7);
   rail.replaceChildren(...selected.map(mediaCard));
   rail.scrollLeft = 0;
@@ -231,28 +314,55 @@ function buildActivityFilters() {
 
 function setStage(id, play = false) {
   const item = items.find(i => i.id === id); if (!item) return;
-  const video = $('#process-video'); video.pause(); video.src = item.file; video.poster = item.poster; video.loop = true; video.setAttribute('aria-label', item.title);
+  const video = $('#process-video'); unloadVideo(video); sourcePositions.delete(video); video.dataset.src = item.file; video.poster = item.poster; video.loop = true; video.setAttribute('aria-label', item.title);
   const button = $(`[data-stage="${id}"]`);
   $('#process-number').textContent = `${$('span', button).textContent} / ${item.title.toUpperCase()}`;
   $('#process-caption').textContent = item.description || '';
   $$('[data-stage]').forEach(b => { b.classList.toggle('active', b === button); b.setAttribute('aria-pressed', String(b === button)); });
+  if (play || processInView) loadVideo(video);
   if (play) video.play().catch(() => {});
 }
 $$('[data-stage]').forEach(button => button.addEventListener('click', () => setStage(button.dataset.stage, true)));
-const processObserver = new IntersectionObserver(entries => { if (!entries[0].isIntersecting) $('#process-video').pause(); }, { threshold: .1 });
+let processInView = false;
+$('#process-video').addEventListener('loadedmetadata', () => restorePosition($('#process-video')));
+$('#process-video').addEventListener('play', syncPreviews);
+$('#process-video').addEventListener('pause', syncPreviews);
+const processObserver = new IntersectionObserver(entries => {
+  processInView = entries[0].isIntersecting;
+  if (processInView && !dialog.open && !document.hidden) loadVideo($('#process-video'));
+  else releaseLater($('#process-video'), true);
+}, { threshold: .1 });
 processObserver.observe($('#process-video'));
 const motionButton = $('#motion-toggle');
 function syncMotionButton() { motionButton.textContent = previewsPaused ? 'Play previews ▷' : 'Pause previews Ⅱ'; motionButton.setAttribute('aria-pressed', String(previewsPaused)); }
 syncMotionButton();
 motionButton.addEventListener('click', () => { previewsPaused = !previewsPaused; syncMotionButton(); syncPreviews(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) $$('video').forEach(v => v.pause()); else syncPreviews(); });
+const tabResume = new Set();
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    tabResume.clear();
+    [heroFilm, $('#process-video')].forEach(v => { if (!v.paused) tabResume.add(v); });
+    $$('video').forEach(v => v.pause());
+    releaseLater(heroFilm, true);
+    releaseLater($('#process-video'), true);
+  } else if (!dialog.open) {
+    [[heroFilm, filmInView], [$('#process-video'), processInView]].forEach(([video, inView]) => {
+      if (inView) {
+        loadVideo(video);
+        if (tabResume.has(video)) video.play().catch(() => {});
+      }
+    });
+    tabResume.clear();
+  }
+  syncPreviews();
+});
 
 $('.menu-toggle').addEventListener('click', () => { const open = $('.topbar nav').classList.toggle('open'); $('.menu-toggle').setAttribute('aria-expanded', String(open)); });
 $$('.topbar nav a').forEach(a => a.addEventListener('click', () => { $('.topbar nav').classList.remove('open'); $('.menu-toggle').setAttribute('aria-expanded', 'false'); }));
 const sectionObserver = new IntersectionObserver(entries => { for (const entry of entries) if (entry.isIntersecting) $$('.topbar nav a').forEach(a => a.classList.toggle('active', a.hash === '#' + entry.target.id)); }, { rootMargin: '-15% 0px -60% 0px' });
 $$('section[id]').forEach(section => sectionObserver.observe(section));
 
-fetch('assets/media/manifest.json').then(r => { if (!r.ok) throw new Error('Media manifest unavailable'); return r.json(); }).then(manifest => {
+fetch('assets/media/manifest.json?v=20261116-perf1').then(r => { if (!r.ok) throw new Error('Media manifest unavailable'); return r.json(); }).then(manifest => {
   items = Array.isArray(manifest) ? manifest : manifest.items;
   buildActivityFilters();
   renderRaw();

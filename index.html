@@ -6,6 +6,7 @@
   <meta name="description" content="WinDEX reconstructs metric, world-frame 3D hand motion from in-the-wild egocentric stereo video for dexterous teleoperation and policy learning.">
   <title>WinDEX · Hand Motion in the Wild</title>
   <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="showcase.css?v=20261115-2"><link rel="stylesheet" href="dark.css?v=20261116-1">
+  <link rel="stylesheet" href="performance.css?v=20261116-1">
   <link rel="icon" href="assets/figures/logo.png" type="image/png">
 </head>
 <body>
@@ -27,7 +28,7 @@
   </div>
   <div class="hero-cinema">
     <div class="cinema-label"><span><i></i> THE RESEARCH FILM</span><span>01:30 · SOUND & SUBTITLES</span></div>
-    <div class="cinema-frame"><video id="hero-film" src="assets/WinDEX-film-browser-v2.mp4" poster="assets/film-poster.jpg" controls muted autoplay playsinline preload="auto" aria-label="Full WinDEX supplementary video"><p><a href="assets/WinDEX-film-browser-v2.mp4">Download the research film</a></p></video></div>
+    <div class="cinema-frame"><video id="hero-film" data-src="assets/previews/WinDEX-film-stream.mp4" poster="assets/film-poster.jpg" controls muted playsinline preload="none" aria-label="Full WinDEX supplementary video"><p><a href="assets/WinDEX-film-browser-v2.mp4">Download the research film</a></p></video></div>
     <div class="cinema-controls"><button id="film-sound">↻ Play with narration</button><span>Capture → Reconstruction → Robot action</span><button data-film aria-label="Expand the research film">Expand ↗</button></div>
     <div class="film-chapters" aria-label="Explore the research"><a href="#data"><img src="assets/media/raw-retail.jpg" alt="" loading="lazy"><span><b>01</b> Capture</span></a><a href="#reconstruction"><img src="assets/media/world-surface-craft.jpg" alt="" loading="lazy"><span><b>02</b> Reconstruct</span></a><a href="#robots"><img src="assets/media/teleop-v2-reorientation.jpg" alt="" loading="lazy"><span><b>03</b> Teleoperate</span></a><a href="#robots"><img src="assets/media/policy-object-cup.jpg" alt="" loading="lazy"><span><b>04</b> Learn policies</span></a></div><p id="film-error" hidden><button id="film-retry" type="button">Retry video</button> · <a href="assets/WinDEX-film-browser-v2.mp4">Open the MP4 directly ↗</a></p>
   </div>
@@ -68,5 +69,5 @@
 </main>
 <footer><div class="wrap footer-main"><a class="brand" href="#"><img src="assets/figures/logo.png" alt="WinDEX"></a><p>Metric hand motion. From the wild to robot manipulation.</p><a href="#">Back to top ↑</a></div><div class="wrap footer-bottom"><span>City University of Hong Kong · CyberOrigin</span><a href="assets/MUSIC_CREDIT.txt" target="_blank" rel="noopener">Supplementary video music credits</a></div></footer>
 <dialog id="media-dialog"><div class="dialog-toolbar"><span id="dialog-category">WINDEX / RECORDINGS</span><div><button id="dialog-prev" aria-label="Previous video">←</button><span id="dialog-position"></span><button id="dialog-next" aria-label="Next video">→</button><button class="dialog-close" aria-label="Close viewer">×</button></div></div><div id="dialog-content"></div><div class="dialog-meta"><h3 id="dialog-title"></h3><p id="dialog-description"></p></div><div id="dialog-playlist" aria-label="Videos in this gallery"></div></dialog>
-<script src="app.js?v=20261115-public-1"></script>
+<script src="app.js?v=20261116-perf1"></script>
 </body></html>
