@@ -4,7 +4,7 @@ Research website for **WinDEX: Metric 3D Hand Motion Reconstruction in the Wild 
 
 Live website: https://fruitrabbit.github.io/WinDEX/
 
-Static HTML, CSS, and JavaScript with self-hosted video and image assets. No build step or external CDN is required. The paper buttons are intentionally inactive until a publication URL is available.
+Static HTML, CSS, and JavaScript with self-hosted video and image assets. No build step or external CDN is required. Paper links open the [WinDEX arXiv page](https://arxiv.org/abs/2611.21143).
 
 The dark visual theme follows CyberOrigin's near-black surfaces, green accents, and Space Grotesk / JetBrains Mono typography. Fonts are self-hosted with their licenses in `assets/fonts/`.
 

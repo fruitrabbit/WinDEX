@@ -22,5 +22,6 @@
   "paperVersion": "ieee-20261115-author-v4",
   "bodyPages": 16,
   "referencesPages": 2,
-  "mobileCompatibilityRepair": true
+  "mobileCompatibilityRepair": true,
+  "paperUrl": "https://arxiv.org/abs/2611.21143"
 }
